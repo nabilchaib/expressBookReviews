@@ -36,7 +36,7 @@ regd_users.post("/login", (req,res) => {
     if (authenticatedUser(username,password)) {
       let accessToken = jwt.sign({
         data: password
-      }, 'access', { expiresIn: 60 * 60 });
+      }, 'access', { expiresIn: 600000 });
       req.session.authorization = {
         accessToken,username
     }
@@ -47,19 +47,46 @@ regd_users.post("/login", (req,res) => {
   });
 
   // Add a book review
-regd_users.put("/auth/review/:isbn", (req, res) => {
+  regd_users.put("/auth/review/:isbn", (req, res) => {
     let {isbn} = req.params;
     let {review} = req.body;
-    let book = books.find(book => book.isbn === isbn);
-    if (!book) {
-      return res.status(404).json({message: "Book not found"});
+    if (!books[isbn]) {
+        return res.status(404).json({ message: "Book not found" });
     }
     if (!review) {
-      return res.status(400).json({message: "Please provide a review"});
+        return res.status(400).json({ message: "Please provide a review" });
     }
-    book.reviews.push(review);
+    if (!books[isbn].reviews) {
+        books[isbn].reviews = [];
+    }
+    books[isbn].reviews[username] = review; // Add the review using the username as the key
     return res.status(200).json({message: "Review added successfully"});
+  });
+
+
+// Delete review 
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const {isbn, review} = req.params;
+    if(!books[isbn]) {
+        return res.status(404).send('Book not found');
+    }
+    if(!books[isbn].reviews) {
+        return res.status(404).send('reviews not found');
+    }
+    if(!Array.isArray(books[isbn].reviews)) {
+        books[isbn].reviews = [books[isbn].reviews];
+    }
+    const reviewIndex = books[isbn].reviews.findIndex(review => review.id === reviewID);
+    if(reviewIndex === -1) {
+        return res.status(404).send('Review not found');
+    }
+    if(req.session.username !== books[isbn].reviews[reviewIndex].username) {
+        return res.status(401).send('You are not authorized to delete this review');
+    }
+    books[isbn].reviews = books[isbn].reviews.filter(review => review.id !== reviewID);
+    res.send('Review deleted');
 });
+
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
