@@ -65,24 +65,25 @@ regd_users.post("/login", (req,res) => {
 
 
 // Delete review 
-regd_users.delete("/auth/review/:isbn", (req, res) => {
-    const {isbn, review} = req.params;
-    if(!books[isbn]) {
+regd_users.delete("/auth/review/:isbn/:reviewID", (req, res) => {
+    const {isbn, reviewID} = req.params;
+
+    if (!books[isbn]) {
         return res.status(404).send('Book not found');
     }
-    if(!books[isbn].reviews) {
+    if (!books[isbn].reviews) {
         return res.status(404).send('reviews not found');
     }
-    if(!Array.isArray(books[isbn].reviews)) {
-        books[isbn].reviews = [books[isbn].reviews];
-    }
+
     const reviewIndex = books[isbn].reviews.findIndex(review => review.id === reviewID);
-    if(reviewIndex === -1) {
+    if (reviewIndex === -1) {
         return res.status(404).send('Review not found');
     }
-    if(req.session.username !== books[isbn].reviews[reviewIndex].username) {
+
+    if (req.session.username !== books[isbn].reviews[reviewIndex].username) {
         return res.status(401).send('You are not authorized to delete this review');
     }
+
     books[isbn].reviews = books[isbn].reviews.filter(review => review.id !== reviewID);
     res.send('Review deleted');
 });
